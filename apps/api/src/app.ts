@@ -9,7 +9,12 @@ import express, {
 } from 'express';
 import cors from 'cors';
 import { PORT } from './config';
-import { SampleRouter } from './routers/sample.router';
+import { AuthRouter } from './routers/auth.router';
+import { CategoryRouter } from './routers/category.router';
+import { ProductRouter } from './routers/product.router';
+import { ErrorHandler, responseHandler } from './helpers/response';
+import { join } from 'path';
+import { redisClient } from './lib/redis';
 
 export default class App {
   private app: Express;
@@ -25,13 +30,15 @@ export default class App {
     this.app.use(cors());
     this.app.use(json());
     this.app.use(urlencoded({ extended: true }));
+    this.app.use(express.static(join(__dirname, '/public/images')));
+    redisClient.connect();
   }
 
   private handleError(): void {
     // not found
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.path.includes('/api/')) {
-        res.status(404).send('Not found !');
+        res.status(404).send(responseHandler('Not found', null, false));
       } else {
         next();
       }
@@ -39,10 +46,12 @@ export default class App {
 
     // error
     this.app.use(
-      (err: Error, req: Request, res: Response, next: NextFunction) => {
+      (err: ErrorHandler, req: Request, res: Response, next: NextFunction) => {
         if (req.path.includes('/api/')) {
           console.error('Error : ', err.stack);
-          res.status(500).send('Error !');
+          res
+            .status(err.statusCode || 500)
+            .send(responseHandler(err.message, null, false));
         } else {
           next();
         }
@@ -51,13 +60,13 @@ export default class App {
   }
 
   private routes(): void {
-    const sampleRouter = new SampleRouter();
-
     this.app.get('/api', (req: Request, res: Response) => {
       res.send(`Hello, Purwadhika Student API!`);
     });
 
-    this.app.use('/api/samples', sampleRouter.getRouter());
+    this.app.use('/api/auth', new AuthRouter().getRouter());
+    this.app.use('/api/categories', new CategoryRouter().getRouter());
+    this.app.use('/api/products', new ProductRouter().getRouter());
   }
 
   public start(): void {

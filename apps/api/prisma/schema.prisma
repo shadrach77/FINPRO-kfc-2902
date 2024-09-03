@@ -10,12 +10,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("samples") // if you want to use snake_case format
+enum Gender {
+  Perempuan
+  Pria 
 }
+
+model User {
+  id Int @id @default(autoincrement())
+  phone_number String @db.Char(13) @unique
+  gender Gender
+  image String?
+  birth_date DateTime
+  email String @unique
+  password String
+  full_name String
+  is_verified Boolean @default(false)
+
+  @@map("users")
+}
+
+model Category{
+  id Int @id @default(autoincrement())
+  category String
+  image String
+  Product Product[]
+
+  @@map("categories")
+}
+
+model Product{
+  id Int @id @default(autoincrement())
+  product_name String
+  image String
+  price Decimal @db.Decimal(18,2)
+  description String
+  Category Category @relation(fields:[categoryId], references:[id])
+  categoryId Int
+
+  @@map("products")
+
+}
+
+  // "full_name": "Jordan",
+  //     "phone_number": "087838833",
+  //     "gender": "Perempuan",
+  //     "image": "",
+  //     "date": 15,
+  //     "month": 10,
+  //     "year": 1996,
+  //     "email": "test@mail.com",
+  //     "password": "Password123",
